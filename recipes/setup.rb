@@ -12,11 +12,11 @@ gemfile = File.read(destination_root() + '/Gemfile')
 sqlite_detected = gemfile.include? 'sqlite3'
 
 ## Web Server
-prefs[:dev_webserver] = multiple_choice "Web server for development?", [["WEBrick (default)", "webrick"],
-  ["Thin", "thin"], ["Unicorn", "unicorn"], ["Puma", "puma"], ["Phusion Passenger (Apache/Nginx)", "passenger"],
+prefs[:dev_webserver] = multiple_choice "Web server for development?", [["Puma (default)", "puma"],
+  ["Thin", "thin"], ["Unicorn", "unicorn"], ["Phusion Passenger (Apache/Nginx)", "passenger"],
   ["Phusion Passenger (Standalone)", "passenger_standalone"]] unless prefs.has_key? :dev_webserver
 prefs[:prod_webserver] = multiple_choice "Web server for production?", [["Same as development", "same"],
-  ["Thin", "thin"], ["Unicorn", "unicorn"], ["Puma", "puma"], ["Phusion Passenger (Apache/Nginx)", "passenger"],
+  ["Thin", "thin"], ["Unicorn", "unicorn"], ["Phusion Passenger (Apache/Nginx)", "passenger"],
   ["Phusion Passenger (Standalone)", "passenger_standalone"]] unless prefs.has_key? :prod_webserver
 prefs[:prod_webserver] = prefs[:dev_webserver] if prefs[:prod_webserver] == 'same'
 
@@ -31,7 +31,7 @@ prefs[:templates] = multiple_choice "Template engine?", [["ERB", "erb"], ["Haml"
 ## Testing Framework
 if recipes.include? 'tests'
   prefs[:tests] = multiple_choice "Test framework?", [["None", "none"],
-    ["RSpec with Capybara", "rspec"]] unless prefs.has_key? :tests
+    ["RSpec", "rspec"]] unless prefs.has_key? :tests
   case prefs[:tests]
     when 'rspec'
       say_wizard "Adding DatabaseCleaner, FactoryGirl, Faker, Launchy, Selenium"
@@ -42,9 +42,22 @@ end
 ## Front-end Framework
 if recipes.include? 'frontend'
   prefs[:frontend] = multiple_choice "Front-end framework?", [["None", "none"],
-    ["Bootstrap 3.3", "bootstrap3"], ["Bootstrap 2.3", "bootstrap2"],
+    ["Bootstrap 4.0", "bootstrap4"], ["Bootstrap 3.3", "bootstrap3"], ["Bootstrap 2.3", "bootstrap2"],
     ["Zurb Foundation 5.5", "foundation5"], ["Zurb Foundation 4.0", "foundation4"],
     ["Simple CSS", "simple"]] unless prefs.has_key? :frontend
+end
+
+## jQuery
+if Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR >= 1
+  if prefs[:frontend] == 'none'
+    prefs[:jquery] = multiple_choice "Add jQuery?", [["No", "none"],
+      ["Add jquery-rails gem", "gem"],
+      ["Add using yarn", "yarn"]] unless prefs.has_key? :jquery
+  else
+    prefs[:jquery] = multiple_choice "How to install jQuery?",
+      [["Add jquery-rails gem", "gem"],
+      ["Add using yarn", "yarn"]] unless prefs.has_key? :jquery
+  end
 end
 
 ## Email
@@ -73,13 +86,17 @@ if (recipes.include? 'devise') || (recipes.include? 'omniauth')
   prefs[:authorization] = multiple_choice "Authorization?", [["None", "none"], ["Simple role-based", "roles"], ["Pundit", "pundit"]] unless prefs.has_key? :authorization
   if prefer :authentication, 'devise'
     if (prefer :authorization, 'roles') || (prefer :authorization, 'pundit')
-      prefs[:dashboard] = multiple_choice "Admin interface for database?", [["None", "none"], ["Upmin", "upmin"]] unless prefs.has_key? :dashboard
+      prefs[:dashboard] = multiple_choice "Admin interface for database?", [["None", "none"],
+        ["Thoughtbot Administrate", "administrate"]] unless prefs.has_key? :dashboard
     end
   end
 end
 
 ## Form Builder
-prefs[:form_builder] = multiple_choice "Use a form builder gem?", [["None", "none"], ["SimpleForm", "simple_form"]] unless prefs.has_key? :form_builder
+## (no simple_form for Bootstrap 4 yet)
+unless prefs[:frontend] == 'bootstrap4'
+  prefs[:form_builder] = multiple_choice "Use a form builder gem?", [["None", "none"], ["SimpleForm", "simple_form"]] unless prefs.has_key? :form_builder
+end
 
 ## Pages
 if recipes.include? 'pages'
@@ -123,33 +140,34 @@ end
 # save configuration before anything can fail
 create_file 'config/railscomposer.yml', "# This application was generated with Rails Composer\n\n"
 append_to_file 'config/railscomposer.yml' do <<-TEXT
-apps4: [#{prefs[:apps4]}]
-announcements: [#{prefs[:announcements]}]
-dev_webserver: [#{prefs[:dev_webserver]}]
-prod_webserver: [#{prefs[:prod_webserver]}]
-database: [#{prefs[:database]}]
-templates: [#{prefs[:templates]}]
-tests: [#{prefs[:tests]}]
-continuous_testing: [#{prefs[:continuous_testing]}]
-frontend: [#{prefs[:frontend]}]
-email: [#{prefs[:email]}]
-authentication: [#{prefs[:authentication]}]
-devise_modules: [#{prefs[:devise_modules]}]
-omniauth_provider: [#{prefs[:omniauth_provider]}]
-authorization: [#{prefs[:authorization]}]
-form_builder: [#{prefs[:form_builder]}]
-pages: [#{prefs[:pages]}]
-layouts: [#{prefs[:layouts]}]
-locale: [#{prefs[:locale]}]
-analytics: [#{prefs[:analytics]}]
-deployment: [#{prefs[:deployment]}]
-ban_spiders: [#{prefs[:ban_spiders]}]
-github: [#{prefs[:github]}]
-local_env_file: [#{prefs[:local_env_file]}]
-quiet_assets: [#{prefs[:quiet_assets]}]
-better_errors: [#{prefs[:better_errors]}]
-pry: [#{prefs[:pry]}]
-rvmrc: [#{prefs[:rvmrc]}]
+development:
+  apps4: #{prefs[:apps4]}
+  announcements: #{prefs[:announcements]}
+  dev_webserver: #{prefs[:dev_webserver]}
+  prod_webserver: #{prefs[:prod_webserver]}
+  database: #{prefs[:database]}
+  templates: #{prefs[:templates]}
+  tests: #{prefs[:tests]}
+  continuous_testing: #{prefs[:continuous_testing]}
+  frontend: #{prefs[:frontend]}
+  email: #{prefs[:email]}
+  authentication: #{prefs[:authentication]}
+  devise_modules: #{prefs[:devise_modules]}
+  omniauth_provider: #{prefs[:omniauth_provider]}
+  authorization: #{prefs[:authorization]}
+  form_builder: #{prefs[:form_builder]}
+  pages: #{prefs[:pages]}
+  layouts: #{prefs[:layouts]}
+  locale: #{prefs[:locale]}
+  analytics: #{prefs[:analytics]}
+  deployment: #{prefs[:deployment]}
+  ban_spiders: #{prefs[:ban_spiders]}
+  github: #{prefs[:github]}
+  local_env_file: #{prefs[:local_env_file]}
+  better_errors: #{prefs[:better_errors]}
+  pry: #{prefs[:pry]}
+  rvmrc: #{prefs[:rvmrc]}
+  dashboard: #{prefs[:dashboard]}
 TEXT
 end
 

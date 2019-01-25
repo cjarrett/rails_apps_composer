@@ -10,11 +10,11 @@ if prefer :apps4, 'rails-mailinglist-activejob'
   prefs[:git] = true
   prefs[:local_env_file] = false
   prefs[:pry] = false
-  prefs[:quiet_assets] = true
   prefs[:secrets] = ['mailchimp_list_id', 'mailchimp_api_key']
   prefs[:pages] = 'about'
   prefs[:locale] = 'none'
   prefs[:rubocop] = false
+  prefs[:rvmrc] = true
 
   # gems
   add_gem 'gibbon'

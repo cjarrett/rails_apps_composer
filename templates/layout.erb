@@ -115,8 +115,6 @@ say_wizard("\033[1m\033[36m" + "|_|  \\_\\__,_|_|_|___/_/    \\_\\ .__/| .__/|__
 say_wizard("\033[1m\033[36m" + "                             \| \|   \| \|" + "\033[0m")
 say_wizard("\033[1m\033[36m" + "                             \| \|   \| \|" + "\033[0m")
 say_wizard("\033[1m\033[36m" + '' + "\033[0m")
-say_wizard("\033[1m\033[36m" + "If you like Rails Composer, will you support it?" + "\033[0m")
-say_wizard("\033[1m\033[36m" + "You can help by purchasing our tutorials." + "\033[0m")
 say_wizard("Need help? Ask on Stack Overflow with the tag \'railsapps.\'")
 say_wizard("Your new application will contain diagnostics in its README file.")
 
@@ -128,9 +126,11 @@ end
 
 # this application template only supports Rails version 4.1 and newer
 case Rails::VERSION::MAJOR.to_s
+when "5"
+  say_wizard "You are using Rails version #{Rails::VERSION::STRING}. Please report any issues."
 when "3"
-    say_wizard "You are using Rails version #{Rails::VERSION::STRING} which is not supported. Use Rails 4.1 or newer."
-    raise StandardError.new "Rails #{Rails::VERSION::STRING} is not supported. Use Rails 4.1 or newer."
+  say_wizard "You are using Rails version #{Rails::VERSION::STRING} which is not supported. Use Rails 4.1 or newer."
+  raise StandardError.new "Rails #{Rails::VERSION::STRING} is not supported. Use Rails 4.1 or newer."
 when "4"
   case Rails::VERSION::MINOR.to_s
   when "0"
@@ -174,7 +174,6 @@ redacted_prefs.delete(:local_env_file)
 redacted_prefs.delete(:main_branch)
 redacted_prefs.delete(:prelaunch_branch)
 redacted_prefs.delete(:prod_webserver)
-redacted_prefs.delete(:quiet_assets)
 redacted_prefs.delete(:rvmrc)
 redacted_prefs.delete(:templates)
 

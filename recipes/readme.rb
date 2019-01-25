@@ -67,8 +67,6 @@ option  Create a GitHub repository? (y/n)
 choose  Enter your selection: [#{prefs[:github]}]
 option  Add gem and file for environment variables?
 choose  Enter your selection: [#{prefs[:local_env_file]}]
-option  Reduce assets logger noise during development?
-choose  Enter your selection: [#{prefs[:quiet_assets]}]
 option  Improve error reporting with 'better_errors' during development?
 choose  Enter your selection: [#{prefs[:better_errors]}]
 option  Use 'pry' as console replacement during development and test?
@@ -102,6 +100,7 @@ Rails Composer: http://railscomposer.com/
 TEXT
   end
 
+  remove_file 'README.md'
   create_file 'README.md', "#{app_name.humanize.titleize}\n================\n\n"
 
   if prefer :deployment, 'heroku'

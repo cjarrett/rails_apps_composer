@@ -1,32 +1,39 @@
 # Application template recipe for the rails_apps_composer. Change the recipe here:
-# https://github.com/RailsApps/rails_apps_composer/blob/master/recipes/rails_signup_download.rb
+# https://github.com/RailsApps/rails_apps_composer/blob/master/recipes/rails_signup_thankyou.rb
 
-if prefer :apps4, 'rails-signup-download'
+if prefer :apps4, 'rails-signup-thankyou'
   prefs[:authentication] = 'devise'
   prefs[:authorization] = 'roles'
+  prefs[:dashboard] = 'none'
+  prefs[:ban_spiders] = false
   prefs[:better_errors] = true
+  prefs[:database] = 'sqlite'
+  prefs[:deployment] = 'none'
   prefs[:devise_modules] = false
-  prefs[:form_builder] = false
+  prefs[:dev_webserver] = 'puma'
+  prefs[:email] = 'none'
+  prefs[:frontend] = 'bootstrap3'
+  prefs[:layouts] = 'none'
+  prefs[:pages] = 'none'
+  prefs[:github] = false
   prefs[:git] = true
   prefs[:local_env_file] = false
+  prefs[:prod_webserver] = 'same'
   prefs[:pry] = false
-  prefs[:secrets] = ['mailchimp_list_id', 'mailchimp_api_key']
   prefs[:pages] = 'about+users'
+  prefs[:templates] = 'erb'
+  prefs[:tests] = 'none'
   prefs[:locale] = 'none'
+  prefs[:analytics] = 'none'
   prefs[:rubocop] = false
+  prefs[:disable_turbolinks] = true
   prefs[:rvmrc] = true
-
-  # gems
-  add_gem 'gibbon'
-  add_gem 'sucker_punch'
+  prefs[:form_builder] = false
+  prefs[:jquery] = 'gem'
 
   stage_three do
     say_wizard "recipe stage three"
-    repo = 'https://raw.github.com/RailsApps/rails-signup-download/master/'
-
-    # >-------------------------------[ Config ]---------------------------------<
-
-    copy_from_repo 'config/initializers/active_job.rb', :repo => repo
+    repo = 'https://raw.github.com/RailsApps/rails-signup-thankyou/master/'
 
     # >-------------------------------[ Models ]--------------------------------<
 
@@ -34,17 +41,16 @@ if prefer :apps4, 'rails-signup-download'
 
     # >-------------------------------[ Controllers ]--------------------------------<
 
+    copy_from_repo 'app/controllers/application_controller.rb', :repo => repo
     copy_from_repo 'app/controllers/visitors_controller.rb', :repo => repo
     copy_from_repo 'app/controllers/products_controller.rb', :repo => repo
-
-    # >-------------------------------[ Jobs ]---------------------------------<
-
-    copy_from_repo 'app/jobs/mailing_list_signup_job.rb', :repo => repo
+    copy_from_repo 'app/controllers/thank_you_controller.rb', :repo => repo
 
     # >-------------------------------[ Views ]--------------------------------<
 
     copy_from_repo 'app/views/visitors/index.html.erb', :repo => repo
     copy_from_repo 'app/views/products/product.pdf', :repo => repo
+    copy_from_repo 'app/views/thank_you/index.html.erb', :repo => repo
 
     # >-------------------------------[ Routes ]--------------------------------<
 
@@ -60,8 +66,8 @@ end
 
 __END__
 
-name: rails_signup_download
-description: "rails-signup-download starter application"
+name: rails_signup_thankyou
+description: "rails-signup-thankyou starter application"
 author: RailsApps
 
 requires: [core]

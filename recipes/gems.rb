@@ -20,27 +20,33 @@ if (prefs[:dev_webserver] == prefs[:prod_webserver])
   add_gem 'thin' if prefer :dev_webserver, 'thin'
   add_gem 'unicorn' if prefer :dev_webserver, 'unicorn'
   add_gem 'unicorn-rails' if prefer :dev_webserver, 'unicorn'
-  add_gem 'puma' if prefer :dev_webserver, 'puma'
   add_gem 'passenger' if prefer :dev_webserver, 'passenger_standalone'
 else
   add_gem 'thin', :group => [:development, :test] if prefer :dev_webserver, 'thin'
   add_gem 'unicorn', :group => [:development, :test] if prefer :dev_webserver, 'unicorn'
   add_gem 'unicorn-rails', :group => [:development, :test] if prefer :dev_webserver, 'unicorn'
-  add_gem 'puma', :group => [:development, :test] if prefer :dev_webserver, 'puma'
   add_gem 'passenger', :group => [:development, :test] if prefer :dev_webserver, 'passenger_standalone'
   add_gem 'thin', :group => :production if prefer :prod_webserver, 'thin'
   add_gem 'unicorn', :group => :production if prefer :prod_webserver, 'unicorn'
-  add_gem 'puma', :group => :production if prefer :prod_webserver, 'puma'
   add_gem 'passenger', :group => :production if prefer :prod_webserver, 'passenger_standalone'
 end
 
 ## Database Adapter
 gsub_file 'Gemfile', /gem 'sqlite3'\n/, '' unless prefer :database, 'sqlite'
 gsub_file 'Gemfile', /gem 'pg'.*/, ''
-add_gem 'pg' if prefer :database, 'postgresql'
+if prefer :database, 'postgresql'
+  if Rails::VERSION::MAJOR < 5
+    add_gem 'pg', '~> 0.18'
+  else
+    if Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR <= 1 && Rails::VERSION::MINOR <= 5
+      add_gem 'pg', '~> 0.18'
+    else
+      add_gem 'pg'
+    end
+  end
+end
 gsub_file 'Gemfile', /gem 'mysql2'.*/, ''
 add_gem 'mysql2', '~> 0.3.18' if prefer :database, 'mysql'
-
 ## Gem to set up controllers, views, and routing in the 'apps4' recipe
 add_gem 'rails_apps_pages', :group => :development if prefs[:apps4]
 
@@ -60,12 +66,14 @@ if prefer :tests, 'rspec'
   add_gem 'rails_apps_testing', :group => :development
   add_gem 'rspec-rails', :group => [:development, :test]
   add_gem 'spring-commands-rspec', :group => :development
-  add_gem 'factory_girl_rails', :group => [:development, :test]
+  add_gem 'factory_bot_rails', :group => [:development, :test]
   add_gem 'faker', :group => [:development, :test]
-  add_gem 'capybara', :group => :test
+  unless Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR >= 1
+    add_gem 'capybara', :group => :test
+    add_gem 'selenium-webdriver', :group => :test
+  end
   add_gem 'database_cleaner', :group => :test
   add_gem 'launchy', :group => :test
-  add_gem 'selenium-webdriver', :group => :test
   if prefer :continuous_testing, 'guard'
     add_gem 'guard-bundler', :group => :development
     add_gem 'guard-rails', :group => :development
@@ -83,11 +91,21 @@ case prefs[:frontend]
     add_gem 'bootstrap-sass', '~> 2.3.2.2'
   when 'bootstrap3'
     add_gem 'bootstrap-sass'
+  when 'bootstrap4'
+    add_gem 'bootstrap', '~> 4.0.0'
   when 'foundation4'
     add_gem 'zurb-foundation', '~> 4.3.2'
     add_gem 'compass-rails', '~> 1.1.2'
   when 'foundation5'
-    add_gem 'foundation-rails'
+    add_gem 'foundation-rails', '~> 5.5'
+end
+
+## jQuery
+case prefs[:jquery]
+  when 'gem'
+    add_gem 'jquery-rails'
+  when 'yarn'
+    run 'bundle exec yarn add jquery'
 end
 
 ## Pages
@@ -98,17 +116,17 @@ case prefs[:pages]
     add_gem 'high_voltage'
 end
 
-## Email
-add_gem 'sendgrid' if prefer :email, 'sendgrid'
-
 ## Authentication (Devise)
 if prefer :authentication, 'devise'
     add_gem 'devise'
     add_gem 'devise_invitable' if prefer :devise_modules, 'invitable'
 end
 
-## Administratative Interface (Upmin)
-add_gem 'upmin-admin' if prefer :dashboard, 'upmin'
+## Administratative Interface
+if prefer :dashboard, 'administrate'
+  add_gem 'administrate'
+  add_gem 'bourbon'
+end
 
 ## Authentication (OmniAuth)
 add_gem 'omniauth' if prefer :authentication, 'omniauth'
@@ -207,6 +225,8 @@ stage_two do
       when 'bootstrap3'
         say_wizard "recipe installing simple_form for use with Bootstrap"
         generate 'simple_form:install --bootstrap'
+      when 'bootstrap4'
+        say_wizard "simple_form not yet available for use with Bootstrap 4"
       when 'foundation5'
         say_wizard "recipe installing simple_form for use with Zurb Foundation"
         generate 'simple_form:install --foundation'
@@ -249,12 +269,10 @@ FILE
     end
     create_file 'Procfile', "web: bundle exec rails server -p $PORT\n" if prefer :prod_webserver, 'thin'
     create_file 'Procfile', "web: bundle exec unicorn -p $PORT\n" if prefer :prod_webserver, 'unicorn'
-    create_file 'Procfile', "web: bundle exec puma -p $PORT\n" if prefer :prod_webserver, 'puma'
     create_file 'Procfile', "web: bundle exec passenger start -p $PORT\n" if prefer :prod_webserver, 'passenger_standalone'
     if (prefs[:dev_webserver] != prefs[:prod_webserver])
       create_file 'Procfile.dev', "web: bundle exec rails server -p $PORT\n" if prefer :dev_webserver, 'thin'
       create_file 'Procfile.dev', "web: bundle exec unicorn -p $PORT\n" if prefer :dev_webserver, 'unicorn'
-      create_file 'Procfile.dev', "web: bundle exec puma -p $PORT\n" if prefer :dev_webserver, 'puma'
       create_file 'Procfile.dev', "web: bundle exec passenger start -p $PORT\n" if prefer :dev_webserver, 'passenger_standalone'
     end
   end

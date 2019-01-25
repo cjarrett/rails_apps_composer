@@ -12,31 +12,40 @@ if prefer :apps4, 'learn-rails'
   prefs[:database] = 'sqlite'
   prefs[:deployment] = 'heroku'
   prefs[:devise_modules] = false
-  prefs[:dev_webserver] = 'webrick'
-  prefs[:email] = 'gmail'
-  prefs[:form_builder] = 'simple_form'
-  prefs[:frontend] = 'foundation5'
+  prefs[:dev_webserver] = 'puma'
+  prefs[:email] = 'sendgrid'
+  prefs[:frontend] = 'bootstrap3'
+  prefs[:layouts] = 'none'
+  prefs[:pages] = 'none'
   prefs[:github] = false
   prefs[:git] = true
   prefs[:local_env_file] = 'none'
   prefs[:prod_webserver] = 'same'
   prefs[:pry] = false
-  prefs[:quiet_assets] = true
   prefs[:secrets] = ['owner_email', 'mailchimp_list_id', 'mailchimp_api_key']
   prefs[:templates] = 'erb'
   prefs[:tests] = false
-  prefs[:pages] = 'none'
   prefs[:locale] = 'none'
   prefs[:analytics] = 'none'
   prefs[:rubocop] = false
   prefs[:disable_turbolinks] = false
+  prefs[:rvmrc] = true
+
+  if Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR >= 1
+    prefs[:form_builder] = false
+    prefs[:jquery] = 'gem'
+  else
+    # Rails 5.0 version uses SimpleForm
+    prefs[:form_builder] = 'simple_form'
+    add_gem 'minitest-rails-capybara', :group => :test
+  end
 
   # gems
   add_gem 'high_voltage'
   add_gem 'gibbon'
+  add_gem 'minitest-spec-rails', :group => :test
   gsub_file 'Gemfile', /gem 'sqlite3'\n/, ''
   add_gem 'sqlite3', :group => :development
-  add_gem 'rails_12factor', :group => :production
 
   stage_three do
     say_wizard "recipe stage three"
@@ -59,11 +68,19 @@ if prefer :apps4, 'learn-rails'
 
     # >-------------------------------[ Views ]--------------------------------<
 
-    copy_from_repo 'app/views/contacts/new.html.erb', :repo => repo
+    if Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR >= 1
+      copy_from_repo 'app/views/visitors/new.html.erb', :repo => repo
+      copy_from_repo 'app/views/contacts/new.html.erb', :repo => repo
+    else
+      # Rails 5.0 version uses SimpleForm
+      copy_from_repo 'app/views/visitors/new.html.erb', :repo => 'https://raw.githubusercontent.com/RailsApps/learn-rails/rails50/'
+      copy_from_repo 'app/views/contacts/new.html.erb', :repo => 'https://raw.githubusercontent.com/RailsApps/learn-rails/rails50/'
+    end
+
     copy_from_repo 'app/views/pages/about.html.erb', :repo => repo
     copy_from_repo 'app/views/user_mailer/contact_email.html.erb', :repo => repo
     copy_from_repo 'app/views/user_mailer/contact_email.text.erb', :repo => repo
-    copy_from_repo 'app/views/visitors/new.html.erb', :repo => repo
+
     # create navigation links using the rails_layout gem
     generate 'layout:navigation -f'
 
@@ -73,8 +90,15 @@ if prefer :apps4, 'learn-rails'
 
     # >-------------------------------[ Assets ]--------------------------------<
 
-    copy_from_repo 'app/assets/javascripts/segmentio.js', :repo => repo
+    copy_from_repo 'app/assets/javascripts/segment.js', :repo => repo
 
+    # >-------------------------------[ Tests ]--------------------------------<
+
+    copy_from_repo 'test/test_helper.rb', :repo => repo
+    copy_from_repo 'test/integration/home_page_test.rb', :repo => repo
+    copy_from_repo 'test/models/visitor_test.rb', :repo => repo
+
+    run 'bundle exec rake db:migrate'
   end
 end
 

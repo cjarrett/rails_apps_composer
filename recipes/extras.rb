@@ -2,74 +2,17 @@
 # https://github.com/RailsApps/rails_apps_composer/blob/master/recipes/extras.rb
 
 ## RVMRC
-rvmrc_detected = false
-if File.exist?('.rvmrc')
-  rvmrc_file = File.read('.rvmrc')
-  rvmrc_detected = rvmrc_file.include? app_name
-end
-if File.exist?('.ruby-gemset')
-  rvmrc_file = File.read('.ruby-gemset')
-  rvmrc_detected = rvmrc_file.include? app_name
-end
-unless rvmrc_detected || (prefs.has_key? :rvmrc)
-  prefs[:rvmrc] = yes_wizard? "Use or create a project-specific rvm gemset?"
-end
 if prefs[:rvmrc]
-  if which("rvm")
-    say_wizard "recipe creating project-specific rvm gemset and .rvmrc"
-    # using the rvm Ruby API, see:
-    # http://blog.thefrontiergroup.com.au/2010/12/a-brief-introduction-to-the-rvm-ruby-api/
-    # https://rvm.io/integration/passenger
-    if ENV['MY_RUBY_HOME'] && ENV['MY_RUBY_HOME'].include?('rvm')
-      begin
-        gems_path = ENV['MY_RUBY_HOME'].split(/@/)[0].sub(/rubies/,'gems')
-        ENV['GEM_PATH'] = "#{gems_path}:#{gems_path}@global"
-        require 'rvm'
-        RVM.use_from_path! File.dirname(File.dirname(__FILE__))
-      rescue LoadError
-        raise "RVM gem is currently unavailable."
-      end
-    end
-    say_wizard "creating RVM gemset '#{app_name}'"
-    RVM.gemset_create app_name
-    say_wizard "switching to gemset '#{app_name}'"
-    # RVM.gemset_use! requires rvm version 1.11.3.5 or newer
-    rvm_spec =
-      if Gem::Specification.respond_to?(:find_by_name)
-        Gem::Specification.find_by_name("rvm")
-      else
-        Gem.source_index.find_name("rvm").last
-      end
-      unless rvm_spec.version > Gem::Version.create('1.11.3.4')
-        say_wizard "rvm gem version: #{rvm_spec.version}"
-        raise "Please update rvm gem to 1.11.3.5 or newer"
-      end
-    begin
-      RVM.gemset_use! app_name
-    rescue => e
-      say_wizard "rvm failure: unable to use gemset #{app_name}, reason: #{e}"
-      raise
-    end
-    if File.exist?('.ruby-version')
-      say_wizard ".ruby-version file already exists"
-    else
-      create_file '.ruby-version', "#{RUBY_VERSION}\n"
-    end
-    if File.exist?('.ruby-gemset')
-      say_wizard ".ruby-gemset file already exists"
-    else
-      create_file '.ruby-gemset', "#{app_name}\n"
-    end
-  else
-    say_wizard "WARNING! RVM does not appear to be available."
-  end
-end
-
-## QUIET ASSETS
-prefs[:quiet_assets] = true if config['quiet_assets']
-if prefs[:quiet_assets]
-  say_wizard "recipe setting quiet_assets for reduced asset pipeline logging"
-  add_gem 'quiet_assets', :group => :development
+   if File.exist?('.ruby-version')
+     say_wizard ".ruby-version file already exists"
+   else
+     create_file '.ruby-version', "#{RUBY_VERSION}\n"
+   end
+   if File.exist?('.ruby-gemset')
+     say_wizard ".ruby-gemset file already exists"
+   else
+     create_file '.ruby-gemset', "#{app_name}\n"
+   end
 end
 
 ## LOCAL_ENV.YML FILE
@@ -125,14 +68,18 @@ if prefs[:disable_turbolinks]
   stage_two do
     say_wizard "recipe stage two"
     gsub_file 'Gemfile', /gem 'turbolinks'\n/, ''
+    gsub_file 'Gemfile', /gem 'turbolinks', '~> 5'\n/, ''
     gsub_file 'app/assets/javascripts/application.js', "//= require turbolinks\n", ''
     case prefs[:templates]
       when 'erb'
         gsub_file 'app/views/layouts/application.html.erb', /, 'data-turbolinks-track' => true/, ''
+        gsub_file 'app/views/layouts/application.html.erb', /, 'data-turbolinks-track' => 'reload'/, ''
       when 'haml'
         gsub_file 'app/views/layouts/application.html.haml', /, 'data-turbolinks-track' => true/, ''
+        gsub_file 'app/views/layouts/application.html.haml', /, 'data-turbolinks-track' => 'reload'/, ''
       when 'slim'
         gsub_file 'app/views/layouts/application.html.slim', /, 'data-turbolinks-track' => true/, ''
+        gsub_file 'app/views/layouts/application.html.slim', /, 'data-turbolinks-track' => 'reload'/, ''
     end
   end
 end
@@ -176,7 +123,7 @@ stage_four do
   remove_file 'config/railscomposer.yml'
   # remove commented lines and multiple blank lines from Gemfile
   # thanks to https://github.com/perfectline/template-bucket/blob/master/cleanup.rb
-  gsub_file 'Gemfile', /#.*\n/, "\n"
+  gsub_file 'Gemfile', /#\s.*\n/, "\n"
   gsub_file 'Gemfile', /\n^\s*\n/, "\n"
   remove_file 'Gemfile.lock'
   # remove commented lines and multiple blank lines from config/routes.rb
@@ -228,10 +175,7 @@ config:
   - local_env_file:
       type: multiple_choice
       prompt: Add gem and file for environment variables?
-      choices: [ [None, none], [Add .env with Foreman, foreman], [Add application.yml with Figaro, figaro]]
-  - quiet_assets:
-      type: boolean
-      prompt: Reduce assets logger noise during development?
+      choices: [ [None, none], [Add .env with Foreman, foreman]]
   - better_errors:
       type: boolean
       prompt: Improve error reporting with 'better_errors' during development?

@@ -12,10 +12,10 @@ if prefer :apps4, 'rails-foundation'
   prefs[:git] = true
   prefs[:local_env_file] = false
   prefs[:pry] = false
-  prefs[:quiet_assets] = true
   prefs[:pages] = 'about'
   prefs[:locale] = 'none'
   prefs[:rubocop] = false
+  prefs[:rvmrc] = true
 end
 
 __END__

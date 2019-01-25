@@ -11,7 +11,6 @@ if prefer :apps4, 'rails-stripe-coupons'
   prefs[:git] = true
   prefs[:local_env_file] = false
   prefs[:pry] = false
-  prefs[:quiet_assets] = true
   prefs[:secrets] = ['stripe_publishable_key',
     'stripe_api_key',
     'product_price',
@@ -21,6 +20,7 @@ if prefer :apps4, 'rails-stripe-coupons'
   prefs[:pages] = 'about+users'
   prefs[:locale] = 'none'
   prefs[:rubocop] = false
+  prefs[:rvmrc] = true
 
   # gems
   add_gem 'gibbon'

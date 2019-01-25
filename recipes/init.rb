@@ -3,12 +3,14 @@
 
 stage_three do
   say_wizard "recipe stage three"
+  copy_from_repo 'config/secrets.yml' if Rails::VERSION::MAJOR == 5 && Rails::VERSION::MINOR >= 2
+  copy_from_repo 'config/secrets.yml' if Rails::VERSION::MAJOR >= 6
   if (!prefs[:secrets].nil?)
     prefs[:secrets].each do |secret|
       env_var = "  #{secret}: <%= ENV[\"#{secret.upcase}\"] %>"
       inject_into_file 'config/secrets.yml', "\n" + env_var, :after => "development:"
       ### 'inject_into_file' doesn't let us inject the same text twice unless we append the extra space, why?
-      inject_into_file 'config/secrets.yml', "\n" + env_var + " ", :after => "production:"
+      inject_into_file 'config/secrets.yml', "\n" + env_var + " ", :after => "\n" + "production:"
     end
   end
   case prefs[:email]
@@ -36,11 +38,11 @@ stage_three do
   figaro_omniauth  = foreman_omniauth.gsub('=', ': ')
   ## EMAIL
   inject_into_file 'config/secrets.yml', "\n" + "  domain_name: example.com", :after => "development:"
-  inject_into_file 'config/secrets.yml', "\n" + "  domain_name: <%= ENV[\"DOMAIN_NAME\"] %>", :after => "production:"
+  inject_into_file 'config/secrets.yml', "\n" + "  domain_name: <%= ENV[\"DOMAIN_NAME\"] %>", :after => "\n" + "production:"
   inject_into_file 'config/secrets.yml', "\n" + secrets_email, :after => "development:"
   unless prefer :email, 'none'
     ### 'inject_into_file' doesn't let us inject the same text twice unless we append the extra space, why?
-    inject_into_file 'config/secrets.yml', "\n" + secrets_email + " ", :after => "production:"
+    inject_into_file 'config/secrets.yml', "\n" + secrets_email + " ", :after => "\n" + "production:"
     append_file '.env', foreman_email if prefer :local_env_file, 'foreman'
     append_file 'config/application.yml', figaro_email if prefer :local_env_file, 'figaro'
   end
@@ -48,7 +50,7 @@ stage_three do
   if prefer :authentication, 'devise'
     inject_into_file 'config/secrets.yml', "\n" + '  domain_name: example.com' + " ", :after => "test:"
     inject_into_file 'config/secrets.yml', "\n" + secrets_d_devise, :after => "development:"
-    inject_into_file 'config/secrets.yml', "\n" + secrets_p_devise, :after => "production:"
+    inject_into_file 'config/secrets.yml', "\n" + secrets_p_devise, :after => "\n" + "production:"
     append_file '.env', foreman_devise if prefer :local_env_file, 'foreman'
     append_file 'config/application.yml', figaro_devise if prefer :local_env_file, 'figaro'
     gsub_file 'config/initializers/devise.rb', /'please-change-me-at-config-initializers-devise@example.com'/, "'no-reply@' + Rails.application.secrets.domain_name"
@@ -57,7 +59,7 @@ stage_three do
   if prefer :authentication, 'omniauth'
     inject_into_file 'config/secrets.yml', "\n" + secrets_omniauth, :after => "development:"
     ### 'inject_into_file' doesn't let us inject the same text twice unless we append the extra space, why?
-    inject_into_file 'config/secrets.yml', "\n" + secrets_omniauth + " ", :after => "production:"
+    inject_into_file 'config/secrets.yml', "\n" + secrets_omniauth + " ", :after => "\n" + "production:"
     append_file '.env', foreman_omniauth if prefer :local_env_file, 'foreman'
     append_file 'config/application.yml', figaro_omniauth if prefer :local_env_file, 'figaro'
   end
@@ -112,7 +114,7 @@ FILE
   end
   ## DEVISE-CONFIRMABLE
   if (prefer :devise_modules, 'confirmable') || (prefer :devise_modules, 'invitable')
-    inject_into_file 'app/services/create_admin_service.rb', "        user.confirm!\n", :after => "user.password_confirmation = Rails.application.secrets.admin_password\n"
+    inject_into_file 'app/services/create_admin_service.rb', "        user.confirm\n", :after => "user.password_confirmation = Rails.application.secrets.admin_password\n"
   end
   ## DEVISE-INVITABLE
   if prefer :devise_modules, 'invitable'
@@ -149,12 +151,18 @@ FILE
     case prefs[:frontend]
       when 'bootstrap3'
         generate 'layout:devise bootstrap3 -f'
+      when 'bootstrap4'
+        generate 'layout:devise bootstrap3 -f'
       when 'foundation5'
         generate 'layout:devise foundation5 -f'
     end
   end
   # create navigation links using the rails_layout gem
-  generate 'layout:navigation -f'
+  if prefs[:frontend] == 'bootstrap4'
+    generate 'layout:navigation bootstrap4 -f'
+  else
+    generate 'layout:navigation -f'
+  end
   if prefer :apps4, 'rails-stripe-coupons'
     inject_into_file 'app/views/layouts/_nav_links_for_auth.html.erb', ", data: { no_turbolink: true }", :after => "new_user_registration_path"
     inject_into_file 'app/views/layouts/_nav_links_for_auth.html.erb', "\n    <li><%= link_to 'Coupons', coupons_path %></li>", :after => "users_path %></li>"
